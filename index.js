@@ -2,6 +2,7 @@ import express from "express"
 import dotenv from "dotenv"
 import bodyParser from "body-parser"
 import cookieParser from "cookie-parser";
+import morgan from "morgan";
 import dbConnect from "./config/dbConnect.js";
 import authRouter from "./routes/authRoute.js"
 import productRouter from "./routes/productRoute.js"
@@ -10,7 +11,7 @@ const app =express();
 const env=dotenv.config();
 const PORT=process.env.PORT || 3000;
 
-
+app.use(morgan("tiny"))
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended:false}))
 app.use(cookieParser());
