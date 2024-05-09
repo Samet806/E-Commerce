@@ -1,3 +1,4 @@
+import { query } from "express";
 import Product from "../models/ProductModel.js"
 import asyncHandler from "express-async-handler"
 import slugify from "slugify";
@@ -47,16 +48,49 @@ export const createProduct=asyncHandler(async (req,res)=>{
  })
 //get all products
 export const getAllProducts=asyncHandler(async (req,res)=>{
+    try{
     const queryObj={...req.query};
     const excludeFields=["page","sort","limit","fields"]
     excludeFields.forEach(el=>{
-        console.log(queryObj[el])
         return delete queryObj[el]})
-    
-    try{
-        const products= await Product.find(
-            queryObj
-        );
+
+    let queryStr=JSON.stringify(queryObj)
+    queryStr=  queryStr.replace(/\b(gte|gt|lte|lt)\b/g , (match)=>`$${match}`);
+    let query= Product.find(JSON.parse(queryStr))
+      
+// sorting
+    if(req.query.sort)
+    {
+        const  sortBy=req.query.sort.split(",").join(" ");
+        query=query.sort(sortBy)
+    }else
+    {
+       query=query.sort("-createdAt")
+    }
+
+    //limiting  the filters
+    if(req.query.fields){
+        const  fields=req.query.fields.split(",").join(" ");
+        query=query.select(fields)
+    }
+    else
+    {
+     query=query.select("-__v")
+     console.log(query);
+    }
+
+    //pagination 
+    const page =parseInt(req.query.page);
+    const limit=parseInt(req.query.limit);
+    const skip=(page -1)*limit;
+    query=query.skip(skip).limit(limit);
+    if(req.query.page)
+       {
+           const productCount= await Product.countDocuments();
+           if(skip >= productCount) throw new Error("This Page does not exists")
+       }
+
+      const products=await query;
         res.status(200).json(products);
 
     }
