@@ -2,7 +2,7 @@ import { generateToken } from "../config/jwtToken.js";
 import User from "../models/UserModel.js"
 import asyncHandler from "express-async-handler";
 import crypto from "crypto"
-import { vaidateMongoDbId } from "../utils/validateMongodbld.js";
+import { validateMongoDbId } from "../utils/validateMongodbld.js";
 import { generateRefreshToken } from "../config/refreshToken.js";
 import jwt from "jsonwebtoken"
 import { sendMail } from "./emailCtrl.js";
@@ -90,7 +90,7 @@ export const logout=asyncHandler(async (req,res)=>{
 
 export const updateOneUser=asyncHandler(async(req,res)=>{
      const {_id}=req.user;
-     vaidateMongoDbId(_id)
+     validateMongoDbId(_id)
          try{
         const updateUser=await User.findByIdAndUpdate(_id,{
             firstname:req?.body.firstname,
@@ -120,7 +120,7 @@ export const getAllUsers=asyncHandler(async (req,res)=>{
 })
 //get single user
 export const getUser=asyncHandler(async (req,res)=>{
-    vaidateMongoDbId(req.params.id)
+    validateMongoDbId(req.params.id)
 
     try{
         const user=  await User.findOne({_id:req.params.id});
@@ -148,7 +148,7 @@ export const deleteUser=asyncHandler(async (req,res)=>{
 
 export const blockUser=asyncHandler(async (req,res)=>{
      const {id}=req.params;
-     vaidateMongoDbId(id)
+     validateMongoDbId(id)
 
      try{
         const block=await User.findByIdAndUpdate(id,{$set:{isBlocked:true}},{new:true});
@@ -162,7 +162,7 @@ export const blockUser=asyncHandler(async (req,res)=>{
 
 export const unblockUser=asyncHandler(async (req,res)=>{
     const {id}=req.params;
-    vaidateMongoDbId(id)
+    validateMongoDbId(id)
 
     try{
         const block=await User.findByIdAndUpdate(id,{$set:{isBlocked:false}},{new:true});
@@ -178,7 +178,7 @@ export const updatePassword =asyncHandler(async (req,res)=>{
     const {_id}=req.user;
     const {password}=req.body;
   
-    vaidateMongoDbId(_id);
+    validateMongoDbId(_id);
     const user=await User.findById(_id);
     if(password)
         {
