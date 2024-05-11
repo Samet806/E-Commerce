@@ -42,7 +42,7 @@ export const getBlog = asyncHandler(async (req, res) => {
     validateMongoDbId(id);
 
     try {
-        const blog = await Blog.findById(id)
+        const blog = await Blog.findById(id).populate("likes").populate("dislikes");
         await Blog.findByIdAndUpdate(id, { $inc: { numViews: 1 } }, { new: true })
         res.json(blog)
 

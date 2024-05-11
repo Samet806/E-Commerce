@@ -8,6 +8,7 @@ import authRouter from "./routes/authRoute.js"
 import productRouter from "./routes/productRoute.js"
 import { errorHandler, notFound } from "./middlewares/errorHandler.js";
 import blogRouter from "./routes/blogRoute.js"
+import pcategoryRouter from "./routes/prodcategoryRoute.js"
 const app =express();
 const env=dotenv.config();
 const PORT=process.env.PORT || 3000;
@@ -20,6 +21,7 @@ app.use(cookieParser());
 app.use("/api/user",authRouter)
 app.use("/api/product",productRouter)
 app.use("/api/blog",blogRouter)
+app.use("/api/category",pcategoryRouter)
 app.use(notFound)
 app.use(errorHandler )
 
