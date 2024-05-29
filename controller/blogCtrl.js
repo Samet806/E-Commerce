@@ -2,7 +2,8 @@ import Blog from "../models/blogModel.js"
 import User from "../models/UserModel.js"
 import asyncHandler from "express-async-handler"
 import { validateMongoDbId } from "../utils/validateMongodbld.js";
-
+import { cloadinaryUploadImg } from "../utils/cloudnary.js";
+import fs from "fs"
 // create blog
 export const createBlog = asyncHandler(async (req, res) => {
 
@@ -150,3 +151,34 @@ export const disLikeBlog = asyncHandler(async (req, res) => {
     }
 });
 
+export const uploadImages = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+     
+    try {
+        const uploader = (path) => cloadinaryUploadImg(path);
+        const urls = [];
+        const files = req.files;
+        for (const file of files) {
+            const { path } = file;
+            console.log(file); 
+            const newPath = await uploader(path);
+            urls.push(newPath);
+            fs.unlink(path, (err) => {
+                if (err) {
+                    console.error(`Failed to delete file: ${path}`, err);
+                } else {
+                    console.log(`Successfully deleted file: ${path}`);
+                }
+            });  
+
+        }
+
+        const findBlog = await Blog.findByIdAndUpdate(id, {
+            images: urls.map(file => file.url)
+        }, { new: true });
+
+        res.json(findBlog);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});

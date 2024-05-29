@@ -1,7 +1,10 @@
 import { query } from "express";
 import Product from "../models/ProductModel.js"
+import User from "../models/UserModel.js"
 import asyncHandler from "express-async-handler"
 import slugify from "slugify";
+import { cloadinaryUploadImg } from "../utils/cloudnary.js";
+import fs from "fs"
 //create product
 export const createProduct=asyncHandler(async (req,res)=>{ 
  try{
@@ -112,3 +115,112 @@ export const getaProduct=asyncHandler(async (req,res)=>{
         throw new Error(err)
     }
 })
+
+export const addToWishlist=asyncHandler(async (req,res)=>{
+    const {_id}=req.user;
+    const {prodId}=req.body;
+    try{
+       const user=await User.findById(_id);
+       const alreadyAdded= user.wishlist.find((id)=>id.toString()===prodId);
+       if(alreadyAdded)
+        {
+              let user=await User.findByIdAndUpdate(_id,{
+                $pull:{wishlist:prodId}
+              },{new:true})
+
+             res.json(user); 
+        }else{
+            let user=await User.findByIdAndUpdate(_id,{
+                $push:{wishlist:prodId}
+              },{new:true})
+
+             res.json(user); 
+        }
+    }catch(err)
+    {
+        throw new Error(err);
+    }
+})
+
+export const rating=asyncHandler(async(req,res)=>{
+    const {_id}=req.user;
+    const {star,prodId,comment}=req.body;
+
+    try{
+        const product=await Product.findById(prodId);
+        let alreadyRated=product.ratings.find((userId)=>userId.postedBy.toString()===_id.toString());
+        if(alreadyRated)
+            {
+                const updateRating=await Product.updateOne({
+                    ratings:{$elemMatch:alreadyRated }
+            },
+            {
+                $set:{"ratings.$.star":star,"ratings.$.comment":comment}
+            },
+            {
+                new:true
+            })
+          
+            }
+            else
+            {
+                const rateProduct=await Product.findByIdAndUpdate(prodId,{
+                    $push:{ratings:{
+                        star:star,
+                        comment:comment,
+                        postedBy:_id
+                    }}
+                },{new:true})
+
+            }
+            const getAllratings=await Product.findById(prodId);
+            let totalRating=getAllratings.ratings.length;
+            let ratingsum=getAllratings.ratings.map((item)=>item.star).reduce((prev,curr)=> prev+curr,0);
+
+            let actualRating= Math.round(ratingsum/totalRating);
+           let productnew= await Product.findByIdAndUpdate(prodId,{
+                totalrating:actualRating
+            },{new:true})
+
+            res.json(productnew)
+    }
+   
+    catch(err)
+    {
+        throw new Error(err);
+    }
+})
+
+
+export const uploadImages = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+     
+    try {
+        const uploader = (filePath) => cloadinaryUploadImg(filePath);
+        const urls = [];
+        const files = req.files;
+
+        for (const file of files) {
+            const { path } = file;
+            const newPath = await uploader(path);
+            urls.push(newPath);
+            fs.unlink(path, (err) => {
+                if (err) {
+                    console.error(`Failed to delete file: ${path}`, err);
+                } else {
+                    console.log(`Successfully deleted file: ${path}`);
+                }
+            });         
+        }
+
+        const findProduct = await Product.findByIdAndUpdate(id, {
+            images: urls.map(file => file.url)
+        }, { new: true });
+
+        res.json(findProduct);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
